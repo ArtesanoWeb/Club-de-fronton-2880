@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  PLAYER
+}
+
+enum DominantHand {
+  LEFT
+  RIGHT
+}
+
+enum SeasonStatus {
+  UPCOMING
+  ACTIVE
+  FINISHED
+}
+
+enum MatchModality {
+  TEMPORADA_OFICIAL
+  REY_DE_CANCHA
+  RETO
+  AMISTOSO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(PLAYER)
+  refreshToken String?
+  player       Player?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Player {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id])
+  name         String
+  nickname     String?
+  photoUrl     String?
+  dominantHand DominantHand?
+  playStyle    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  duosAsPlayer1 Duo[] @relation("Player1Duos")
+  duosAsPlayer2 Duo[] @relation("Player2Duos")
+  mvpMatches    Match[] @relation("MatchMvp")
+  ranking       RankingIndividual?
+}
+
+model Duo {
+  id        String   @id @default(cuid())
+  player1Id String
+  player2Id String
+  player1   Player   @relation("Player1Duos", fields: [player1Id], references: [id])
+  player2   Player   @relation("Player2Duos", fields: [player2Id], references: [id])
+  createdAt DateTime @default(now())
+
+  matchesAsTeamA Match[] @relation("MatchTeamA")
+  matchesAsTeamB Match[] @relation("MatchTeamB")
+  ranking        RankingDuo?
+
+  @@unique([player1Id, player2Id])
+}
+
+model Season {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  startDate DateTime
+  endDate   DateTime?
+  status    SeasonStatus @default(UPCOMING)
+  matches   Match[]
+  createdAt DateTime     @default(now())
+}
+
+model Match {
+  id              String         @id @default(cuid())
+  seasonId        String?
+  season          Season?        @relation(fields: [seasonId], references: [id])
+  modality        MatchModality
+  teamAId         String
+  teamBId         String
+  teamA           Duo            @relation("MatchTeamA", fields: [teamAId], references: [id])
+  teamB           Duo            @relation("MatchTeamB", fields: [teamBId], references: [id])
+  scoreA          Int
+  scoreB          Int
+  mvpPlayerId     String?
+  mvpPlayer       Player?        @relation("MatchMvp", fields: [mvpPlayerId], references: [id])
+  durationMinutes Int?
+  notes           String?
+  playedAt        DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+}
+
+model RankingIndividual {
+  id            String   @id @default(cuid())
+  playerId      String   @unique
+  player        Player   @relation(fields: [playerId], references: [id])
+  points        Int      @default(1000)
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  currentStreak Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+model RankingDuo {
+  id            String   @id @default(cuid())
+  duoId         String   @unique
+  duo           Duo      @relation(fields: [duoId], references: [id])
+  points        Int      @default(1000)
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  currentStreak Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
