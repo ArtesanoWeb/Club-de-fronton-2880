@@ -14,6 +14,7 @@ node_modules/
 .vscode/
 .idea/
 
-# Claude Code
+# AI agent tool configs/memory
 .claude/
 .agents/
+.opencode/
