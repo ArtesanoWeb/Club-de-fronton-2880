@@ -33,11 +33,12 @@ export function UserMenu() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" onClick={() => window.location.href = '/login'}>
-          Iniciar Sesión
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <Button variant="ghost" className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" onClick={() => window.location.href = '/login'}>
+          <span className="hidden sm:inline">Iniciar Sesión</span>
+          <span className="sm:hidden">Entrar</span>
         </Button>
-        <Button onClick={() => window.location.href = '/register'}>
+        <Button className="h-8 px-2 text-xs sm:h-9 sm:px-3 sm:text-sm" onClick={() => window.location.href = '/register'}>
           Registrarse
         </Button>
       </div>
@@ -55,9 +56,9 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="relative h-10 w-10 rounded-full">
-        <Avatar className="h-10 w-10">
-          <AvatarFallback className="bg-primary text-primary-foreground">
+      <DropdownMenuTrigger className="relative h-8 w-8 rounded-full sm:h-10 sm:w-10">
+        <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+          <AvatarFallback className="bg-primary text-xs text-primary-foreground sm:text-sm">
             {initials}
           </AvatarFallback>
         </Avatar>
