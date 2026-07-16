@@ -39,6 +39,11 @@ export class SeasonsController {
     return this.seasonsService.findOne(id);
   }
 
+  @Get(':id/standings')
+  getStandings(@Param('id') id: string) {
+    return this.seasonsService.getStandings(id);
+  }
+
   @UseGuards(JwtAccessGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Patch(':id')

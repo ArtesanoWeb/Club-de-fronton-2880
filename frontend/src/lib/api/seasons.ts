@@ -25,6 +25,40 @@ export interface UpdateSeasonPayload {
   status?: SeasonStatus;
 }
 
+interface StandingPlayerInfo {
+  id: string;
+  name: string;
+  nickname?: string;
+  photoUrl?: string;
+}
+
+export interface SeasonStandingIndividual {
+  playerId: string;
+  player: StandingPlayerInfo;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+}
+
+export interface SeasonStandingDuo {
+  duoId: string;
+  duo: {
+    id: string;
+    player1: StandingPlayerInfo;
+    player2: StandingPlayerInfo;
+  };
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+}
+
+export interface SeasonStandings {
+  individual: SeasonStandingIndividual[];
+  duos: SeasonStandingDuo[];
+}
+
 export const seasonsApi = {
   getSeasons: () => apiRequest<Season[]>('/seasons'),
 
@@ -44,4 +78,6 @@ export const seasonsApi = {
 
   deleteSeason: (id: string) =>
     apiRequest<void>(`/seasons/${id}`, { method: 'DELETE' }),
+
+  getStandings: (id: string) => apiRequest<SeasonStandings>(`/seasons/${id}/standings`),
 };

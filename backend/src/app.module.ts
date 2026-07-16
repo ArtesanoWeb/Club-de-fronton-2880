@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { MatchesModule } from './matches/matches.module';
 import { PlayersModule } from './players/players.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RankingsModule } from './rankings/rankings.module';
 import { SeasonsModule } from './seasons/seasons.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { SeasonsModule } from './seasons/seasons.module';
     PlayersModule,
     SeasonsModule,
     MatchesModule,
+    RankingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
