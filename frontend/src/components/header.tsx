@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { UserMenu } from '@/components/user-menu';
-import { Home, Users, Calendar, Menu, X } from 'lucide-react';
+import { Home, Users, Calendar, Trophy, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -48,6 +48,13 @@ export function Header() {
               <Home className="h-4 w-4" />
               Partidos
             </Link>
+            <Link
+              href="/rankings"
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <Trophy className="h-4 w-4" />
+              Rankings
+            </Link>
           </nav>
         </div>
         
@@ -90,6 +97,14 @@ export function Header() {
             >
               <Home className="h-4 w-4" />
               Partidos
+            </Link>
+            <Link
+              href="/rankings"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Trophy className="h-4 w-4" />
+              Rankings
             </Link>
           </div>
         </nav>
