@@ -35,6 +35,10 @@ cd backend && npm install && npx prisma migrate dev && npm run start:dev   # htt
 cd frontend && npm install && npm run dev -- -p 3001                       # http://localhost:3001
 ```
 
+## Flujo de trabajo (Git)
+
+Ramas, convención de naming y proceso de PR/deploy para trabajo con múltiples agentes: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
 ## Estado del proyecto
 
 Backend: Auth (JWT+refresh), CRUD de Players/Seasons, y Registro de Partidos con ranking ELO automático — funcionales y probados. Frontend: scaffold inicial, sin pantallas propias todavía. Detalle completo del avance y próximos pasos en [`FRONTEND_BRIEF.md`](./FRONTEND_BRIEF.md).
