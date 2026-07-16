@@ -9,17 +9,18 @@ import { Button } from '@/components/ui/button';
 
 export function RequireRole({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, hasHydrated } = useAuthStore();
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (!isAuthenticated) {
       router.push('/login');
     } else if (user?.role !== 'ADMIN') {
       router.push('/unauthorized');
     }
-  }, [isAuthenticated, user, router]);
+  }, [hasHydrated, isAuthenticated, user, router]);
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') {
+  if (!hasHydrated || !isAuthenticated || user?.role !== 'ADMIN') {
     return null;
   }
 
