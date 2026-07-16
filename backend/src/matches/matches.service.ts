@@ -3,19 +3,28 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MatchModality } from '../../generated/prisma/enums';
+import { MatchFormat, MatchModality } from '../../generated/prisma/enums';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateMatchDto } from './dto/create-match.dto';
+import { CreateMatchDto, CreateMatchSetDto } from './dto/create-match.dto';
 
-const ELO_K_FACTOR = 32;
+const ELO_K_FACTOR = 32; // default: TEMPORADA_OFICIAL (y REY_DE_CANCHA cuando exista)
+const RETO_ELO_K_FACTOR = 48; // Reto pesa más en el ELO — punto de partida, ajustable
 const DEFAULT_RATING = 1000;
+
+const BLITZ_TARGET = 15;
+const CAMPEONATO_TARGET = 18;
+
+function getKFactor(modality: MatchModality): number {
+  return modality === MatchModality.RETO ? RETO_ELO_K_FACTOR : ELO_K_FACTOR;
+}
 
 const matchInclude = {
   season: true,
   mvpPlayer: true,
   teamA: { include: { player1: true, player2: true } },
   teamB: { include: { player1: true, player2: true } },
+  sets: { orderBy: { setNumber: 'asc' } },
 } satisfies Prisma.MatchInclude;
 
 @Injectable()
@@ -41,9 +50,10 @@ export class MatchesService {
   }
 
   async create(dto: CreateMatchDto) {
-    if (dto.scoreA === dto.scoreB) {
-      throw new BadRequestException('El marcador no puede terminar en empate');
-    }
+    const { setsWonA, setsWonB, teamAWins } = this.deriveMatchResult(
+      dto.format,
+      dto.sets,
+    );
 
     const allPlayerIds = [...dto.teamA, ...dto.teamB];
     if (new Set(allPlayerIds).size !== 4) {
@@ -80,7 +90,7 @@ export class MatchesService {
       }
     }
 
-    const teamAWins = dto.scoreA > dto.scoreB;
+    const kFactor = getKFactor(dto.modality);
 
     const matchId = await this.prisma.$transaction(async (tx) => {
       const teamA = await this.findOrCreateDuo(tx, dto.teamA[0], dto.teamA[1]);
@@ -90,14 +100,22 @@ export class MatchesService {
         data: {
           seasonId: dto.seasonId,
           modality: dto.modality,
+          format: dto.format,
           teamAId: teamA.id,
           teamBId: teamB.id,
-          scoreA: dto.scoreA,
-          scoreB: dto.scoreB,
+          scoreA: setsWonA,
+          scoreB: setsWonB,
           mvpPlayerId: dto.mvpPlayerId,
           durationMinutes: dto.durationMinutes,
           notes: dto.notes,
           playedAt: dto.playedAt ? new Date(dto.playedAt) : undefined,
+          sets: {
+            create: dto.sets.map((s, i) => ({
+              setNumber: i + 1,
+              scoreA: s.scoreA,
+              scoreB: s.scoreB,
+            })),
+          },
         },
       });
 
@@ -107,14 +125,70 @@ export class MatchesService {
           dto.teamA,
           dto.teamB,
           teamAWins,
+          kFactor,
         );
-        await this.updateDuoRankings(tx, teamA.id, teamB.id, teamAWins);
+        await this.updateDuoRankings(
+          tx,
+          teamA.id,
+          teamB.id,
+          teamAWins,
+          kFactor,
+        );
       }
 
       return match.id;
     });
 
     return this.findOne(matchId);
+  }
+
+  private deriveMatchResult(format: MatchFormat, sets: CreateMatchSetDto[]) {
+    const target =
+      format === MatchFormat.BLITZ ? BLITZ_TARGET : CAMPEONATO_TARGET;
+
+    if (format === MatchFormat.BLITZ && sets.length !== 1) {
+      throw new BadRequestException('Blitz siempre se juega a un solo set');
+    }
+
+    let setsWonA = 0;
+    let setsWonB = 0;
+
+    sets.forEach((set, index) => {
+      if (set.scoreA === set.scoreB) {
+        throw new BadRequestException(
+          `El set ${index + 1} no puede terminar en empate`,
+        );
+      }
+      const winningScore = Math.max(set.scoreA, set.scoreB);
+      if (winningScore < target) {
+        throw new BadRequestException(
+          `El set ${index + 1} debe alcanzar al menos ${target} puntos (formato ${format})`,
+        );
+      }
+      if (set.scoreA > set.scoreB) {
+        setsWonA++;
+      } else {
+        setsWonB++;
+      }
+    });
+
+    if (sets.length === 2 && setsWonA !== 2 && setsWonB !== 2) {
+      throw new BadRequestException(
+        'Con 2 sets el resultado debe ser 2-0; si quedó 1-1 hace falta un tercer set',
+      );
+    }
+    if (sets.length === 3) {
+      const winsAfterTwo = sets
+        .slice(0, 2)
+        .filter((s) => s.scoreA > s.scoreB).length;
+      if (winsAfterTwo === 2 || winsAfterTwo === 0) {
+        throw new BadRequestException(
+          'El tercer set solo aplica si el marcador quedó 1-1 tras los dos primeros',
+        );
+      }
+    }
+
+    return { setsWonA, setsWonB, teamAWins: setsWonA > setsWonB };
   }
 
   private async findOrCreateDuo(
@@ -162,10 +236,11 @@ export class MatchesService {
     ratingSelf: number,
     ratingOpponent: number,
     didWin: boolean,
+    kFactor: number,
   ): number {
     const expected =
       1 / (1 + Math.pow(10, (ratingOpponent - ratingSelf) / 400));
-    return Math.round(ELO_K_FACTOR * ((didWin ? 1 : 0) - expected));
+    return Math.round(kFactor * ((didWin ? 1 : 0) - expected));
   }
 
   private nextStreak(currentStreak: number, didWin: boolean): number {
@@ -180,6 +255,7 @@ export class MatchesService {
     teamAIds: string[],
     teamBIds: string[],
     teamAWins: boolean,
+    kFactor: number,
   ) {
     const rankings = new Map<
       string,
@@ -196,8 +272,18 @@ export class MatchesService {
       (rankings.get(teamBIds[0])!.points + rankings.get(teamBIds[1])!.points) /
       2;
 
-    const teamADelta = this.eloDelta(teamARating, teamBRating, teamAWins);
-    const teamBDelta = this.eloDelta(teamBRating, teamARating, !teamAWins);
+    const teamADelta = this.eloDelta(
+      teamARating,
+      teamBRating,
+      teamAWins,
+      kFactor,
+    );
+    const teamBDelta = this.eloDelta(
+      teamBRating,
+      teamARating,
+      !teamAWins,
+      kFactor,
+    );
 
     for (const id of teamAIds) {
       await this.applyIndividualRankingUpdate(
@@ -239,14 +325,25 @@ export class MatchesService {
     teamADuoId: string,
     teamBDuoId: string,
     teamAWins: boolean,
+    kFactor: number,
   ) {
     const [rankingA, rankingB] = await Promise.all([
       this.getOrCreateDuoRanking(tx, teamADuoId),
       this.getOrCreateDuoRanking(tx, teamBDuoId),
     ]);
 
-    const deltaA = this.eloDelta(rankingA.points, rankingB.points, teamAWins);
-    const deltaB = this.eloDelta(rankingB.points, rankingA.points, !teamAWins);
+    const deltaA = this.eloDelta(
+      rankingA.points,
+      rankingB.points,
+      teamAWins,
+      kFactor,
+    );
+    const deltaB = this.eloDelta(
+      rankingB.points,
+      rankingA.points,
+      !teamAWins,
+      kFactor,
+    );
 
     await tx.rankingDuo.update({
       where: { duoId: teamADuoId },
