@@ -20,8 +20,10 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  hasHydrated: boolean;
   setSession: (user: User, accessToken: string, refreshToken: string) => void;
   clearSession: () => void;
+  setHasHydrated: (value: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      hasHydrated: false,
 
       setSession: (user, accessToken, refreshToken) => {
         setTokens(accessToken, refreshToken);
@@ -51,6 +54,8 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
       },
+
+      setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
       name: 'fronton-auth',
@@ -67,6 +72,7 @@ export const useAuthStore = create<AuthState>()(
             state.clearSession();
           });
         }
+        state?.setHasHydrated(true);
       },
     }
   )
