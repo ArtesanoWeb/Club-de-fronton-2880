@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { setTokens, clearTokens } from '@/lib/api/client';
+import { setTokens, clearTokens, setTokenRefreshListener } from '@/lib/api/client';
+import { authApi } from '@/lib/api/auth';
 
 export interface User {
   id: string;
@@ -62,8 +63,15 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         if (state?.accessToken && state?.refreshToken) {
           setTokens(state.accessToken, state.refreshToken);
+          authApi.me().catch(() => {
+            state.clearSession();
+          });
         }
       },
     }
   )
 );
+
+setTokenRefreshListener((accessToken, refreshToken) => {
+  useAuthStore.setState({ accessToken, refreshToken });
+});
