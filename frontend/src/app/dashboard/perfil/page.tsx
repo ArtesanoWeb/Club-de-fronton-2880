@@ -130,7 +130,11 @@ function PerfilForm() {
               render={({ field }) => (
                 <Select value={field.value ?? null} onValueChange={field.onChange}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecciona una opción" />
+                    <SelectValue placeholder="Selecciona una opción">
+                      {(value: 'LEFT' | 'RIGHT' | null) =>
+                        value === 'RIGHT' ? 'Diestro' : value === 'LEFT' ? 'Zurdo' : 'Selecciona una opción'
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="RIGHT">Diestro</SelectItem>
