@@ -7,6 +7,13 @@ interface RequestOptions extends RequestInit {
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
+type TokenRefreshListener = (accessToken: string, refreshToken: string) => void;
+let onTokensRefreshed: TokenRefreshListener | null = null;
+
+export function setTokenRefreshListener(listener: TokenRefreshListener | null) {
+  onTokensRefreshed = listener;
+}
+
 export function setTokens(access: string | null, refresh: string | null) {
   accessToken = access;
   refreshToken = refresh;
@@ -42,6 +49,7 @@ async function tryRefreshToken(): Promise<boolean> {
     const data = await res.json();
     accessToken = data.accessToken;
     refreshToken = data.refreshToken;
+    onTokensRefreshed?.(data.accessToken, data.refreshToken);
     return true;
   } catch {
     return false;

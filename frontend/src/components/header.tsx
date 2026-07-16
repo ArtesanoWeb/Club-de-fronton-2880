@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { UserMenu } from '@/components/user-menu';
-import { Home, Users, Calendar, Trophy, Menu, X } from 'lucide-react';
+import { Home, Users, Calendar, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -13,8 +14,15 @@ export function Header() {
     <header className="border-b border-border bg-card">
       <div className="container mx-auto flex h-14 items-center justify-between px-3 sm:h-16 sm:px-4">
         <div className="flex items-center gap-4 sm:gap-6">
-          <Link href="/" className="flex items-center gap-1.5 text-base font-bold text-primary sm:text-lg">
-            <Trophy className="h-5 w-5 text-accent sm:h-6 sm:w-6" />
+          <Link href="/" className="flex items-center gap-2 text-base font-bold text-primary sm:text-lg">
+            <Image
+              src="/brand/logo.png"
+              alt="Club de Frontón 2880"
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9"
+              priority
+            />
             <span className="hidden xs:inline">Frontón 2880</span>
             <span className="xs:hidden">2880</span>
           </Link>

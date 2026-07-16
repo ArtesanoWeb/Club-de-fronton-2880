@@ -1,6 +1,7 @@
 'use client';
 
-import { Trophy, Users, Calendar, Target } from 'lucide-react';
+import Image from 'next/image';
+import { Users, Calendar, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -9,9 +10,14 @@ export default function Home() {
     <div className="flex flex-1 flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="mx-auto max-w-4xl text-center">
         <div className="mb-6 flex justify-center sm:mb-8">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary sm:h-20 sm:w-20 md:h-24 md:w-24">
-            <Trophy className="h-8 w-8 text-primary-foreground sm:h-10 sm:w-10 md:h-12 md:w-12" />
-          </div>
+          <Image
+            src="/brand/logo.png"
+            alt="Club de Frontón 2880"
+            width={96}
+            height={96}
+            className="h-16 w-16 rounded-full object-cover shadow-md sm:h-20 sm:w-20 md:h-24 md:w-24"
+            priority
+          />
         </div>
         <h1 className="mb-3 text-2xl font-bold text-primary sm:mb-4 sm:text-3xl md:text-4xl">
           Club de Frontón 2880
